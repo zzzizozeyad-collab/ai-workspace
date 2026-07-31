@@ -1,0 +1,5 @@
+
+OPENAI_API_KEY=your_openai_api_key_here
+
+# AI Workspace Pro
+Enterprise-grade multi-functional AI SaaS platform built with Next.js, Vercel AI SDK, and OpenAI GPT-4o.

@@ -1,0 +1,64 @@
+
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+export async function extractTextWithMetadata(file: File): Promise<{ text: string, readingTime: number }> {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  let text = '';
+
+  try {
+    switch (extension) {
+      case 'pdf':
+        text = await extractPdfText(file);
+        break;
+      case 'docx':
+        text = await extractDocxText(file);
+        break;
+      case 'txt':
+      case 'md':
+      case 'csv':
+        text = await file.text();
+        break;
+      case 'pptx':
+        text = await extractPptxTextRaw(file);
+        break;
+      default:
+        throw new Error("Unsupported file format.");
+    }
+  } catch (e: any) {
+    throw new Error(`Failed to parse file: ${e.message}`);
+  }
+
+  const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+  const readingTime = Math.ceil(wordCount / 238);
+
+  return { text, readingTime };
+}
+
+async function extractPdfText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+    fullText += pageText + '\n\n';
+  }
+  return fullText;
+}
+
+async function extractDocxText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
+}
+
+async function extractPptxTextRaw(file: File): Promise<string> {
+  const text = await file.text();
+  const cleanText = text.replace(/<[^>]+>/g, ' ').replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ');
+  return cleanText.length > 100 ? cleanText : "Could not securely extract presentation text client-side.";
+}

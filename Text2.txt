@@ -1,0 +1,41 @@
+
+import { z } from 'zod';
+
+export const summarySchema = z.object({
+  language: z.string().describe("The primary language of the document"),
+  executiveSummary: z.string().describe("A comprehensive executive summary"),
+  keyPoints: z.array(z.string()).describe("Main takeaways and bullet points"),
+  actionItems: z.array(z.string()).describe("Tasks or action items mentioned"),
+  importantDates: z.array(z.object({
+    date: z.string(),
+    event: z.string()
+  })).describe("Chronological dates and their associated events"),
+  qa: z.array(z.object({
+    question: z.string(),
+    answer: z.string()
+  })).describe("5-10 logical questions and answers based on the text"),
+  flashcards: z.array(z.object({
+    front: z.string(),
+    back: z.string()
+  })).describe("Study flashcards for key concepts"),
+  keywords: z.array(z.string()).describe("Important keywords and phrases"),
+  entities: z.array(z.object({
+    name: z.string(),
+    type: z.string()
+  })).describe("Named entities (People, Organizations, Locations)")
+});
+
+export type DocumentSummary = z.infer<typeof summarySchema>;
+
+export interface ProcessedDocument {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  rawText: string;
+  readingTime: number;
+  summary?: Partial<DocumentSummary>;
+  isProcessing: boolean;
+  isSummarizing: boolean;
+  error?: string;
+}
